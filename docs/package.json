@@ -1,0 +1,19 @@
+{
+  "name": "ral-blog",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "authors": {
+    "name": "R4L",
+    "email": "ralwayne@163.com"
+  },
+  "repository": "/ral-blog",
+  "scripts": {
+    "dev": "vuepress dev src",
+    "build": "vuepress build src"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "vuepress": "^1.5.3"
+  }
+}
