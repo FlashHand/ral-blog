@@ -1,4 +1,5 @@
 # [deprecated]WKWebView+JSPatch注入代码，实现H5与原生页面的灵活交互
+()
 多人的项目都会用到UIWebView或WKWebView，时常要让H5页面和原生页面交互。
 
 常见的方法有url拦截（UIWebView，WKWebView都支持），最典型的应该是WebViewJavaScriptBridge利用看不见的iframe来实现的方法。
