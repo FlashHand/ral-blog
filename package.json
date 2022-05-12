@@ -14,6 +14,10 @@
   },
   "license": "MIT",
   "devDependencies": {
+    "less": "^4.1.2",
     "vuepress": "^1.5.3"
+  },
+  "dependencies": {
+    "less-loader": "^7.2.0"
   }
 }
