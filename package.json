@@ -10,14 +10,22 @@
   "repository": "/ral-blog",
   "scripts": {
     "dev": "vuepress dev src",
-    "build": "vuepress build src"
+    "build": "vuepress build src",
+    "preinstall": "rig preinstall",
+    "postinstall": "rig postinstall"
   },
   "license": "MIT",
   "devDependencies": {
     "less": "^4.1.2",
-    "vuepress": "^1.5.3"
+    "vuepress": "^1.5.3",
+    "json5": "2.1.3"
   },
   "dependencies": {
     "less-loader": "^7.2.0"
-  }
+  },
+  "private": true,
+  "workspaces": [
+    "rigs/*",
+    "rigs_dev/*"
+  ]
 }

@@ -1,16 +1,19 @@
 # [deprecated]WKWebView+JSPatch注入代码，实现H5与原生页面的灵活交互
-()
-多人的项目都会用到UIWebView或WKWebView，时常要让H5页面和原生页面交互。
 
-常见的方法有url拦截（UIWebView，WKWebView都支持），最典型的应该是WebViewJavaScriptBridge利用看不见的iframe来实现的方法。
+## 解决的问题
+在WKWebView中常用的H5和原生交互的方式有
+- url拦截的方式
+- message-handler
 
-还有就是通过JavaScriptCore （UIWebView支持，WKWebView不支持）来实现。
+这些方式有一个问题就是，需要提前写好Native代码，以供H5调用。
+假设突然需要发布一个H5页面，该H5页面要跳转到某个原生页面，并且点击原生页面里的某个按钮。
+一般开发会需要先开发相应原生功能，然后才能支持H5使用该功能。这样会导致H5需要等待APP发布后才能发布，而且该功能无法及时覆盖所有用户。
 
-我介绍的是一种很另类的方法，也没见过别人用过，但我试着用于生产中了,对线程和内存管理理解的好的话,这种方法会很灵活好用。
+有一种另类的方法，可以让H5实现高度灵活的与Native进行通信。
 
 将WKWebView和JSPatch结合起来使用，从而向APP里注入代码。
 
-这样做能让H5页面和原生页面的交互大大加强。
+这样做能让H5页面和原生页面的交互大大加强，而不需要APP发布。
 
 若不了解JSPatch可以先看看JSPatch.
 
@@ -19,13 +22,10 @@ ws
 
 初始化WKWebView
 若要通过H5页面导入脚本，就得让WKWebView和原生层面能够交互。
-
-_rwWebView=[[WKWebView alloc]initWithFrame:CGRectMake(0, 0, self.view.frame.size.width, self.view.frame.size.height)];
+```
+RWWebView *_rwWebView=[[WKWebView alloc]initWithFrame:CGRectMake(0, 0, self.view.frame.size.width, self.view.frame.size.height)];
 [_rwWebView.configuration.userContentController addScriptMessageHandler:self name:@"LoadScript"];
 [_rwWebView.configuration.userContentController addScriptMessageHandler:self name:@"DoFunction"];
-.
-.
-.
 [self.view addSubview:_rwWebView];
 NSURL *url=[[NSBundle mainBundle]URLForResource:@"index" withExtension:@"html"];
 NSMutableURLRequest *tmpRequest=[[NSMutableURLRequest alloc] initWithURL:url];
@@ -35,6 +35,8 @@ tmpRequest.timeoutInterval=60;
 
 [_rwWebView.configuration.userContentController addScriptMessageHandler:self name:@"LoadScript"];
 [_rwWebView.configuration.userContentController addScriptMessageHandler:self name:@"DoFunction"];
+```
+
 self必须得遵循【WKScriptMessageHandler】协议。
 LoadScript和DoFunction就相当于消息处理者。然后会在JS脚本中被用到。
 
@@ -123,8 +125,3 @@ Demo的问题：
 didReceiveScriptMessage:(WKScriptMessage *)message"是异步回调的。
 
 JSPatch脚本里必须很小心，得注意线程安全。比如在脚本里使用self，但是self实际上已经被释放的情况，所以有时要用“isEqual”: 去核对内存地址。
-
-作者：R4L
-链接：https://www.jianshu.com/p/6c44e4267ff5
-来源：简书
-著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。

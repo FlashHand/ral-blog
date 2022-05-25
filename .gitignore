@@ -11,3 +11,9 @@ dist
 config.local.js
 basement_dist
 .idea
+
+rigs/*
+rigs_dev/*
+.env.rig
+!rigs/.gitkeep
+!rigs_dev/.gitkeep
