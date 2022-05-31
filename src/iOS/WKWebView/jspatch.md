@@ -1,6 +1,6 @@
 # [deprecated]WKWebView+JSPatch注入代码，实现H5与原生页面的灵活交互
 
-## 解决的问题
+## 需要解决的问题
 在WKWebView中常用的H5和原生交互的方式有
 - url拦截的方式
 - message-handler
@@ -15,15 +15,35 @@
 
 这样做能让H5页面和原生页面的交互大大加强，而不需要APP发布。
 
-若不了解JSPatch可以先看看JSPatch.
+若不了解JSPatch可以先看看[JSPatch](https://github.com/bang590/JSPatch).
 
-ws
-先扔Demo.
+#### Demo
+```shell
+#https://github.com/FlashHand/WKWebView-JSPatch
+git clone git@github.com:FlashHand/WKWebView-JSPatch.git
+```
+## 实现过程
+### LoadScript按钮
+```html
+<input type="button" value="LoadScript" onclick="loadScript()">
+```
+
+```javascript
+function loadScript() {
+  window.webkit.messageHandlers.LoadScript.postMessage(`require\('SecondViewController');
+  defineClass('ViewController',{
+  goSecondVC: function() {
+  var svc=SecondViewController.alloc().init();
+  self.presentViewController_animated_completion(svc,YES,null);
+},});`);
+}
+```
+*loadScript*函数通过messageHandlers想WKWebView发送了
 
 初始化WKWebView
 若要通过H5页面导入脚本，就得让WKWebView和原生层面能够交互。
 ```
-RWWebView *_rwWebView=[[WKWebView alloc]initWithFrame:CGRectMake(0, 0, self.view.frame.size.width, self.view.frame.size.height)];
+_rwWebView=[[WKWebView alloc]initWithFrame:CGRectMake(0, 0, self.view.frame.size.width, self.view.frame.size.height)];
 [_rwWebView.configuration.userContentController addScriptMessageHandler:self name:@"LoadScript"];
 [_rwWebView.configuration.userContentController addScriptMessageHandler:self name:@"DoFunction"];
 [self.view addSubview:_rwWebView];
