@@ -48,7 +48,7 @@ function loadScript() {
 注册两个message handler
 - LoadScript:用来接受JSPatch脚本
 - DoFunction:向Native发送需要执行的方法名和参数，通过**performSelectorOnMainThread**来执行来执行通过JSPatch在运行时申明的新方法。
-```Objective-C
+```objectivec
 _rwWebView=[[WKWebView alloc]initWithFrame:CGRectMake(0, 0, self.view.frame.size.width, self.view.frame.size.height)];
 //注册两个Handler
 [_rwWebView.configuration.userContentController addScriptMessageHandler:self name:@"LoadScript"];
@@ -110,7 +110,7 @@ NSDictionary, and NSNull.
 
 ### DoFunction，运行时执行OC方法。
 H5执行doFunction后会执行：
-```Objective-C
+```objectivec
 else if ([message.name isEqualToString:@"DoFunction"])
     {
         NSDictionary *messageDic=message.body;

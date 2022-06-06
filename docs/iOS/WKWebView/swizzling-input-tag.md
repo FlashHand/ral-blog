@@ -4,37 +4,41 @@
 
 [[toc]]
 
-##为什么要这么做
-需要把一个网站嵌入到APP里，那个网站的一个页面包含了一个上传文件的按钮，他们只能接受后缀为jpg的图片，但是iOS相册里png图片是常见的。
-然而他们对客户端要求必须有这种限制。所以客户端需要想办法，把用户挑选出来的图片转为jpg格式，后缀改为jpg再上传。
+## 为什么要这么做
+1. 需要把一个网站嵌入到APP里，那个网站的一个页面包含了一个上传文件的按钮，他们只能接受后缀为jpg的图片，但是iOS相册里png图片是常见的。
+2. 无法修改网站程序，通过js转换格式。 
 
-初步考虑后大致想出了三个路子：
+需要从native方面想办法，把用户挑选出来的图片转为jpg格式，后缀改为jpg再上传。
 
-能不能在UIImageViewCongtroller里做method-swizzling.
-能不能注入JS，通过JS拦截来转换图片格式。
-在WebKit里做method-swizzling,毕竟总得通过一个回调把片传给WebView.
-方法1无法走通，因为不知道找不到可行的方法，但是可以利用UIImagePickerControllerDelegate，这个由方法3描述。
-方法2也是走不通，原因就是浏览器层面不支持。
+大致有3个思路：
 
-然后就是方法3了。这是一个完全可行的方法。
+**思路1：** 能不能在UIImageViewCongtroller里做method-swizzling.
+**思路2：** 能不能注入JS，通过JS拦截来转换图片格式。
+**思路3：** 在WebKit里做method-swizzling,毕竟总得通过一个原生回调方法把片传给H5.
+
+未采用思路1，未找到可行的方法，但是可以利用UIImagePickerControllerDelegate，这个由方法3描述。
+方法2是可以的，具体的一种方式是注入JS代码，覆盖input监听回调函数方法，但是不同的网页做法可能有区别，本文不做介绍。
+
+本文主要介绍方法三，覆盖所有input标签。
 
 0x01 寻找拦截的入口
 在xcode里的文档并没有指出UIImagePickerController的delegate是谁。
 这里可以从WebKit2文档里找到的，就是WKFileUploadPanel.
-不过我用了一个自下而上的方法来寻找，swizzle了viewDidAppear方法。
-
+也可以利用method-swizzling来寻找，这里swizzle了viewDidAppear方法。
+```objectivec
 - (void)swizzled_viewDidAppear {
   [self swizzled_viewDidAppear];
   if ([self isKindOfClass:[UIImagePickerController class]]) {
-  UIImagePickerController *that = self;
-  NSLog(@"%@",that.delegate);
+    UIImagePickerController *that = self;
+    NSLog(@"%@",that.delegate);
   }
-  打印出来的便是<WKFileUploadPanel: 0x10bdc3710>,
-  google一下即可发现WKFileUploadPanel.mm源码，后面需要用到。
+```
 
-0x02 置换回调方法
+打印出来的便是<WKFileUploadPanel: 0x10bdc3710>, google一下即可发现源码 [WKFileUploadPanel.mm](https://opensource.apple.com/source/WebKit2/WebKit2-7603.2.4/UIProcess/ios/forms/WKFileUploadPanel.mm.auto.html) 后面需要用到。
+
+## 置换回调方法
 根据文档，和对mediaInfo的打印结果确认，只有didFinishPickingMediaWithInfo包含了图片和后缀信息，是适用于重写图片信息的。
-
+```
 __TVOS_PROHIBITED @protocol UIImagePickerControllerDelegate<NSObject>
 @optional
 // The picker does not dismiss itself; the client dismisses it in these callbacks.
@@ -43,14 +47,18 @@ __TVOS_PROHIBITED @protocol UIImagePickerControllerDelegate<NSObject>
 - (void)imagePickerController:(UIImagePickerController *)picker didFinishPickingImage:(UIImage *)image editingInfo:(nullable NSDictionary<NSString *,id> *)editingInfo NS_DEPRECATED_IOS(2_0, 3_0);
 - (void)imagePickerController:(UIImagePickerController *)picker didFinishPickingMediaWithInfo:(NSDictionary<NSString *,id> *)info;
 - (void)imagePickerControllerDidCancel:(UIImagePickerController *)picker;
-  //MediaInfo
+```
+
+```
+  //MediaInfo的打印，包含了图片和后缀信息，是适用于重写图片信息的
   [0] (null)  @"UIImagePickerControllerMediaType" : @"public.image"
   [1] (null)  @"UIImagePickerControllerOriginalImage" : (no summary)
   [2] (null)  @"UIImagePickerControllerReferenceURL" : @"assets-library://asset/asset.JPG?id=7C993AB5-2881-4261-BAB4-BB0559E8C65C&ext=JPG"
   [3] (null)  @"UIImagePickerControllerImageURL" : @"file:///private/var/mobile/Containers/Data/Application/F024EE26-344E-4A83-AD0F-8E4BCEFA18AA/tmp/E1167ADD-779C-4496-B4E3-5AD45A0B2478.jpeg"
-  然后参照WKFileUploadPanel.mm源码进行swizzling.
-  先贴出swizzle后的方法实现
-
+```
+然后参照WKFileUploadPanel.mm源码进行swizzling.
+先贴出swizzle后的方法实现
+```
 - (void)swizzled_imagePickerController:(UIImagePickerController *)picker didFinishPickingMediaWithInfo:(NSDictionary<NSString *,id> *)info{
   NSMutableDictionary *dict = [[NSMutableDictionary alloc]initWithDictionary:info];
   //UIImagePickerControllerReferenceURL设为空是关键一步。
@@ -81,8 +89,9 @@ __TVOS_PROHIBITED @protocol UIImagePickerControllerDelegate<NSObject>
   }
   [self swizzled_imagePickerController:picker didFinishPickingMediaWithInfo:dict];
   }
+  ```
   fast_PathInDocumentDirectory的实现
-
+```
 NSString *fast_PathInDocumentDirectory(NSString *fileName)
 {
 NSArray *documentDirectories =
@@ -94,6 +103,7 @@ NSUserDomainMask, YES);
     return [documentDirectory stringByAppendingPathComponent:fileName];
 }
 [NSUUID shortUUIDString] 是来源于UUIDShortener的扩展方法
+```
 
 对置换方法的解释
 在结合mediaInfo从源码寻找的过程中发现了突破口，实际上在发现这个方法之前我都不确定是否可以实现对图片的置换。
@@ -103,7 +113,7 @@ NSUserDomainMask, YES);
 所以必须再深入一点去了解源码，确认是否可行。
 
 下面是WKFileUploadPanel中上传图片的方法：
-
+```
 - (void)_uploadItemFromMediaInfo:(NSDictionary *)info successBlock:(void (^)(_WKFileUploadItem *))successBlock failureBlock:(void (^)(void))failureBlock
   {
   NSString *mediaType = [info objectForKey:UIImagePickerControllerMediaType];
@@ -147,6 +157,7 @@ NSUserDomainMask, YES);
   // Photos taken with the camera will not have an asset URL. Fall back to a JPEG representation.
   [self _uploadItemForJPEGRepresentationOfImage:originalImage successBlock:successBlock failureBlock:failureBlock];
   }
+  ```
   上面这些代码，主要关注一下几个部分
 
 [info objectForKey:UIImagePickerControllerMediaURL]是无需修改的

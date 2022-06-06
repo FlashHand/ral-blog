@@ -16,4 +16,6 @@ rigs/*
 rigs_dev/*
 .env.rig
 !rigs/.gitkeep
-!rigs_dev/.gitkeep
+!rigs_dev/.gitkeepnode_modules
+.temp
+.cache

@@ -1,6 +1,9 @@
 const {description} = require('../../package')
+const { backToTopPlugin } = require('@vuepress/plugin-back-to-top')
+const {mediumZoom} = require('@vuepress/plugin-medium-zoom');
+const { prismjsPlugin } = require('@vuepress/plugin-prismjs')
 
-module.exports = {
+const ralConfig = {
 	/**
 	 * Ref：https://v1.vuepress.vuejs.org/config/#title
 	 */
@@ -37,7 +40,7 @@ module.exports = {
 				text: 'iOS',
 				ariaLabel: 'iOS Menu',
 				items: [
-					{ text: 'WKWebView', link: '/iOS/WKWebView/' },
+					{text: 'WKWebView', link: '/iOS/WKWebView/'},
 				]
 			},
 			{
@@ -60,10 +63,10 @@ module.exports = {
 			'/iOS/WKWebView/': [
 				{
 					title: 'WKWebView',
-					path:'/iOS/WKWebView/',
+					path: '/iOS/WKWebView/',
 					// initialOpenGroupIndex: 1,
 					collapsable: true,
-					sidebarDepth:1,
+					sidebarDepth: 1,
 					children: [
 						'swizzling-input-tag.md',
 						'jspatch',
@@ -77,8 +80,9 @@ module.exports = {
 	 * Apply plugins，ref：https://v1.vuepress.vuejs.org/zh/plugin/
 	 */
 	plugins: [
-		'@vuepress/plugin-back-to-top',
-		'@vuepress/plugin-medium-zoom',
+		backToTopPlugin(),
+		mediumZoom({}),
+		prismjsPlugin({}),
 	],
 	chainWebpack: (config, isServer) => {
 		config.module.rules.push = {
@@ -88,4 +92,5 @@ module.exports = {
 			],
 		}
 	}
-}
+};
+export default ralConfig;
